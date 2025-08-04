@@ -1,1 +1,1 @@
-Proyecto Base de datos para Supermercado +  Interfaz Grafica
+Proyecto Base de datos Postgres para Supermercado +  Interfaz Grafica
