@@ -1,0 +1,173 @@
+-- Tabla: CATEGORIAS
+CREATE TABLE categorias (
+    id_categoria SERIAL PRIMARY KEY,
+    nombre_categoria VARCHAR(50) NOT NULL UNIQUE,
+    descripcion TEXT,
+    es_perecible BOOLEAN DEFAULT FALSE
+);
+
+
+
+-- Tabla: PRODUCTOS
+CREATE TABLE productos (
+    id_producto SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    precio DECIMAL(10,2) NOT NULL CHECK (precio >= 0),    
+    id_categoria INT NOT NULL,
+    FOREIGN KEY (id_categoria) REFERENCES categorias(id_categoria)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+);
+
+-- Tabla: CLIENTES
+CREATE TABLE clientes (
+    id_cliente SERIAL PRIMARY KEY,
+    cedula VARCHAR(20) UNIQUE, 	
+    nombre VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    telefono VARCHAR(20),
+    direccion TEXT
+);
+
+-- Tabla: empleados
+CREATE TABLE empleados (
+    id_empleado SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    cedula VARCHAR(10) UNIQUE CHECK (cedula ~ '^[0-9]{10}$'),
+    cargo VARCHAR(50) NOT NULL,
+    telefono VARCHAR(20),
+    fecha_contratacion DATE NOT NULL DEFAULT CURRENT_DATE,
+    CHECK (fecha_contratacion <= CURRENT_DATE)
+);
+
+
+-- Tabla: PROVEEDORES
+CREATE TABLE proveedores (
+    id_proveedor SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    contacto VARCHAR(100),
+    telefono VARCHAR(20),
+    direccion TEXT
+);
+
+-- Tabla: COMPRAS
+CREATE TABLE compras (
+    id_compra SERIAL PRIMARY KEY,
+    id_proveedor INT NOT NULL,
+    fecha_compra DATE NOT NULL DEFAULT CURRENT_DATE,
+    total DECIMAL(10,2) CHECK (total >= 0),
+    FOREIGN KEY (id_proveedor) REFERENCES proveedores(id_proveedor)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
+    CHECK (fecha_compra <= CURRENT_DATE)
+);
+
+-- Tabla: DETALLE_COMPRAS
+CREATE TABLE detalle_compras (
+    id_detalle SERIAL PRIMARY KEY,
+    id_compra INT NOT NULL,
+    id_producto INT NOT NULL,
+    cantidad INT NOT NULL CHECK (cantidad > 0),
+    precio_unitario DECIMAL(10,2) NOT NULL CHECK (precio_unitario >= 0),
+    FOREIGN KEY (id_compra) REFERENCES compras(id_compra)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+);
+
+-- Tabla: VENTAS
+CREATE TABLE ventas (
+    id_venta SERIAL PRIMARY KEY,
+    id_cliente INT NOT NULL,
+    id_empleado INT NOT NULL,
+    fecha_venta DATE NOT NULL DEFAULT CURRENT_DATE,
+    total DECIMAL(10,2) CHECK (total >= 0),
+    FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+    FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+    CHECK (fecha_venta <= CURRENT_DATE)
+);
+
+-- Tabla: DETALLE_VENTAS
+CREATE TABLE detalle_ventas (
+    id_detalle SERIAL PRIMARY KEY,
+    id_venta INT NOT NULL,
+    id_producto INT NOT NULL,
+    cantidad INT NOT NULL CHECK (cantidad > 0),
+    precio_unitario DECIMAL(10,2) NOT NULL CHECK (precio_unitario >= 0),
+    FOREIGN KEY (id_venta) REFERENCES ventas(id_venta)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+);
+
+-- Tabla: INVENTARIO
+CREATE TABLE inventario (
+    id_producto INT PRIMARY KEY,
+    stock_actual INT NOT NULL CHECK (stock_actual >= 0),
+    stock_minimo INT NOT NULL CHECK (stock_minimo >= 0),
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+-- Tabla: BITACORA
+CREATE TABLE bitacora (
+    id_log SERIAL PRIMARY KEY,
+    nombre_tabla VARCHAR(50) NOT NULL,          -- Tabla afectada
+    accion VARCHAR(10) NOT NULL,                 -- Tipo de acción: INSERT, UPDATE, DELETE
+    id_registro INT,                             -- ID del registro afectado (puede variar según tabla)
+    usuario VARCHAR(50) DEFAULT CURRENT_USER,   -- Usuario que ejecutó la acción
+    fecha TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP                          
+);
+
+-- Tabla: PROMOCIONES
+CREATE TABLE promociones (
+    id_promocion SERIAL PRIMARY KEY,
+    nombre_promocion VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    descuento_porcentaje DECIMAL(5,2) CHECK (descuento_porcentaje >= 0 AND descuento_porcentaje <= 100),
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NOT NULL,
+    CHECK (fecha_fin >= fecha_inicio)
+);
+
+-- Tabla: PRODUCTO_PROMOCION
+CREATE TABLE producto_promocion (
+    id_producto INT NOT NULL,
+    id_promocion INT NOT NULL,
+    PRIMARY KEY (id_producto, id_promocion),
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (id_promocion) REFERENCES promociones(id_promocion)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE usuarios (
+    id SERIAL PRIMARY KEY,
+    usuario VARCHAR(50) UNIQUE NOT NULL,
+    contraseña VARCHAR(100) NOT NULL,
+    rol VARCHAR(20) NOT NULL, -- Ejemplo: 'administrador' o 'empleado'
+    id_empleado INT, -- Este campo se agrega como FK
+    CONSTRAINT fk_id_empleado FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado)
+);
+
+
+-- Usuario administrador 
+INSERT INTO usuarios (usuario, contraseña, rol, id_empleado) VALUES
+('admin1', '1234', 'administrador', 2),
+
+-- Usuario asociado al empleado con id_empleado = 1
+('empleado1', '1234', 'empleado', 1);
+
+ 
